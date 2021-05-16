@@ -88,3 +88,71 @@ function onListening() {
     : 'port ' + addr.port;
   debug('Listening on ' + bind);
 }
+
+//create a chat with socket
+const io = require('socket.io')(server);
+
+/* PROTOCOLLO UTILIZZO SOCKET
+
+  Utente si connette :
+  1 - assegno un id
+  2 - inizializzo a 0 sended e init
+  (fino a che init è false, non può mandare messaggi)
+  3 - Aspetto che mi mandi un messaggio "my name" per sapere il suo nome ed inizializzarlo nella chat
+  4 - controlli vari relativi al nome 
+  5 - inserisco l'utente nella chat
+
+  Quando un utente manda un messaggio :
+  1 - Controllo che init == true
+  2 - msg è il messaggio da mandare
+  3 - inoltro il messaggio
+
+*/
+
+let userList = [];
+let roomName = "chat room";
+
+io.on('connection', (socket)=>{
+  console.log(socket.id);
+  let myId = socket.id;
+  let sended = 0;
+  let myName;
+  let init = false;
+  socket.join(roomName);
+
+  socket.on('my name', msg=>{
+    if(!init)
+    {
+      //inizializzo l'utente nella chat
+    //mi aspetto che msg contenga il nome utente
+      if(msg)
+      {
+        //la stringa non è vuota
+        //TODO : controlli vari relativi al nome
+        myName = msg;
+        init = true;
+        console.log(myName + ", join the chat");
+      }
+    }
+  })
+
+  socket.on('chat message', msg => {
+    console.log(init);
+    if(init)
+    {
+      //io.emit('chat message', msg);
+      sended++;
+      console.log('id = ' + myId + '/n sended = ' + sended);
+      let send = {
+        name : myName,
+        text : msg,
+      }
+      send = JSON.stringify(send);
+      io.to(roomName).emit('chat message', send);
+    }
+  });
+
+  socket.on('disconnect', () => {
+    //  TODO user disconnect
+  });
+})
