@@ -115,8 +115,12 @@ const io = require('socket.io')(server);
 
   "disconnect" -> Quando un utente si disconnette :
   1 - Cancello il suo nome dalla lista dei nomi in attesa
+  2 - rimando il current status
 
   DA SERVER A CLIENT
+
+  "current status" -> Quando un utente si connette dico chi c'è online
+  1 - li aggiunge alla lista
   
   "chat message" -> Quando qualcuno scrive qualcosa :
   1 - Aggiungo il nome alla lista
@@ -147,6 +151,7 @@ io.on('connection', (socket)=>{
     {
       //inizializzo l'utente nella chat
     //mi aspetto che msg contenga il nome utente
+    socket.join(myId);
       if(msg)
       {
         //la stringa non è vuota
@@ -159,10 +164,11 @@ io.on('connection', (socket)=>{
           socket.join(roomName);
           io.to(roomName).emit('user added', myName);
           userList.push(myName);
+          let send = JSON.stringify(userList);
+          io.to(myId).emit('current status', send);
         }
         else{
           //cannot ad the user
-          socket.join(myId);
           io.to(myId).emit('cannot add you', "username already used");
         }
         
@@ -189,10 +195,16 @@ io.on('connection', (socket)=>{
     //  TODO user disconnect
     console.log(myName + " disconnect");
     //comunico ai client
+    userList.splice(userList.indexOf(myName), 1);
     io.to(roomName).emit('user disconnected', myName);
+    let send = JSON.stringify(userList);
+    io.to(roomName).emit('current status', send);
   });
 })
 
 function canAddUser(username){
   return !userList.includes(username);
 }
+
+
+  

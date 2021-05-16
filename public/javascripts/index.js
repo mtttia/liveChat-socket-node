@@ -24,7 +24,9 @@ form.addEventListener('submit', function(e) {
 
 socket.on('user added', (msg)=>{
     //an user added
+    //TODO : show notify
     console.log(msg + " joined the chat");
+    addUser(msg);
 })
 
 socket.on('user disconnected', (msg)=>{
@@ -46,3 +48,21 @@ socket.on('cannot add you', (msg)=>{
     userName = prompt(msg + '\nWhat is your name');
     socket.emit('my name', userName);
 })
+
+socket.on('current status', (msg)=>{
+    //Array di list 
+    let el = JSON.parse(msg);
+    console.log(el);
+    document.getElementById('users').innerHTML = "";
+    el.forEach(user =>{
+        addUser(user);
+    })
+})
+
+function addUser(username)
+{
+    let el = document.createElement('li');
+    el.setAttribute('class', 'list-group-item');
+    el.innerHTML = username;
+    document.getElementById('users').appendChild(el);
+}
