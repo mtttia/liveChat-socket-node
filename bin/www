@@ -94,22 +94,45 @@ const io = require('socket.io')(server);
 
 /* PROTOCOLLO UTILIZZO SOCKET
 
-  Utente si connette :
+  DA CLIENT A SERVER
+
+  "my name" -> Utente si connette :
   1 - assegno un id
   2 - inizializzo a 0 sended e init
   (fino a che init è false, non può mandare messaggi)
   3 - Aspetto che mi mandi un messaggio "my name" per sapere il suo nome ed inizializzarlo nella chat
   4 - controlli vari relativi al nome 
   5 - inserisco l'utente nella chat
+  6 - inserisco il suo nome nella lista e dico agli altri partecipanti che è entrato
+  Se il nome utente non è corretto
+  1 - lo metto in una stanza che dipende dal suo id
+  2 - gli scrivo che non può essere aggiunto
 
-  Quando un utente manda un messaggio :
+  "chat message" -> Quando un utente manda un messaggio :
   1 - Controllo che init == true
   2 - msg è il messaggio da mandare
   3 - inoltro il messaggio
 
+  "disconnect" -> Quando un utente si disconnette :
+  1 - Cancello il suo nome dalla lista dei nomi in attesa
+
+  DA SERVER A CLIENT
+  
+  "chat message" -> Quando qualcuno scrive qualcosa :
+  1 - Aggiungo il nome alla lista
+
+  "user added" -> Quando qualcuno si aggiunge : 
+  1 - Lo Aggiungo alla lista dei partrecipanti
+
+  "user disconnected" -> Quando qualcuno si disconnette :
+  1 - Lo elimino dalla lista dei partecipanti
+
+  "cannot add you" -> Quando il nome utente di un client non va bene, è già utilizzato :
+  1 - Richiedere il nome e ritentare la connessione
+
 */
 
-let userList = [];
+let userList = []; //User that where connected
 let roomName = "chat room";
 
 io.on('connection', (socket)=>{
@@ -117,8 +140,7 @@ io.on('connection', (socket)=>{
   let myId = socket.id;
   let sended = 0;
   let myName;
-  let init = false;
-  socket.join(roomName);
+  let init = false;  
 
   socket.on('my name', msg=>{
     if(!init)
@@ -129,15 +151,26 @@ io.on('connection', (socket)=>{
       {
         //la stringa non è vuota
         //TODO : controlli vari relativi al nome
-        myName = msg;
-        init = true;
-        console.log(myName + ", join the chat");
+        if(canAddUser(msg)){
+          myName = msg;
+          init = true;
+          console.log(myName + ", join the chat");
+          //lo comunica al client
+          socket.join(roomName);
+          io.to(roomName).emit('user added', myName);
+          userList.push(myName);
+        }
+        else{
+          //cannot ad the user
+          socket.join(myId);
+          io.to(myId).emit('cannot add you', "username already used");
+        }
+        
       }
     }
   })
 
   socket.on('chat message', msg => {
-    console.log(init);
     if(init)
     {
       //io.emit('chat message', msg);
@@ -154,5 +187,12 @@ io.on('connection', (socket)=>{
 
   socket.on('disconnect', () => {
     //  TODO user disconnect
+    console.log(myName + " disconnect");
+    //comunico ai client
+    io.to(roomName).emit('user disconnected', myName);
   });
 })
+
+function canAddUser(username){
+  return !userList.includes(username);
+}

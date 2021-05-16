@@ -22,6 +22,16 @@ form.addEventListener('submit', function(e) {
     }
 });
 
+socket.on('user added', (msg)=>{
+    //an user added
+    console.log(msg + " joined the chat");
+})
+
+socket.on('user disconnected', (msg)=>{
+    //an user disconnected
+    console.log(msg + " disconnected");
+})
+
 socket.on('chat message', function(msg) {
     var item = document.createElement('li');
     //msg is a json so
@@ -31,4 +41,8 @@ socket.on('chat message', function(msg) {
     window.scrollTo(0, document.body.scrollHeight);
 });
 
-
+socket.on('cannot add you', (msg)=>{
+    //I cannot be added
+    userName = prompt(msg + '\nWhat is your name');
+    socket.emit('my name', userName);
+})
