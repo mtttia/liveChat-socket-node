@@ -55,14 +55,25 @@ socket.on('current status', (msg)=>{
     console.log(el);
     document.getElementById('users').innerHTML = "";
     el.forEach(user =>{
-        addUser(user);
+        addUser(user, false);
     })
 })
 
-function addUser(username)
+function addUser(username, showIt = true)
 {
     let el = document.createElement('li');
     el.setAttribute('class', 'list-group-item');
     el.innerHTML = username;
     document.getElementById('users').appendChild(el);
+    if(username != userName && showIt)
+        showNewUser(username);
+}
+
+//TOAST SCRIPTS
+var toast = document.getElementById('new-user');
+toast = new bootstrap.Toast(toast);
+function showNewUser(name)
+{
+    document.getElementById('new-username').innerHTML = name;
+    toast.show();
 }
